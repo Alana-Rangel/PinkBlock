@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pinkblock</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <audio id="jumpSound" src="jump.mp3.wav"></audio>
+    <audio id="gameOverSound" src="gameover.mp3.wav"></audio>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #f7f7f7;
+        font-family: "Press Start 2P", sans-serif;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .game {
+        width: 600px;
+        height: 300px;
+        border-bottom: 5px solid #333;
+        position: relative;
+        background-color: #fff;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        display: none;
+      }
+
+      .dino {
+        width: 40px;
+        height: 40px;
+        background-color: #333;
+        position: absolute;
+        bottom: 0;
+        left: 50px;
+      }
+
+      .cactus {
+        width: 20px;
+        height: 40px;
+        background-color: rgb(216, 95, 180);
+        position: absolute;
+        bottom: 0;
+        left: 600px;
+      }
+
+      .jump {
+        animation: jump 0.6s ease-out;
+      }
+
+      @keyframes jump {
+        0% {
+          bottom: 0;
+        }
+        50% {
+          bottom: 100px;
+        }
+        100% {
+          bottom: 0;
+        }
+      }
+
+      .game-over {
+        font-size: 28px;
+        color: rgb(233, 87, 201);
+        white-space: nowrap;
+        overflow: hidden;
+        width: 0;
+        animation: typing 1.5s steps(10, end) forwards;
+        position: absolute;
+        top: 40%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        display: none;
+      }
+
+      @keyframes typing {
+        from {
+          width: 0;
+        }
+        to {
+          width: 28ch;
+        }
+      }
+
+      .start-text {
+        position: absolute;
+        top: 40%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 14px;
+        color: #333;
+        text-align: center;
+        display: none;
+      }
+
+      .fun-message {
+        position: absolute;
+        top: 70%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 14px;
+        color: #1a1a1a;
+        font-weight: bold;
+        display: none;
+      }
+
+      .score {
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 12px;
+        color: #333;
+      }
+
+      .presentation {
+        text-align: center;
+      }
+
+      .presentation-box {
+        width: 600px;
+        height: 300px;
+        background-color: #fff;
+        padding: 30px;
+        border: 2px solid #ccc;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        .presentation-box h2 {
+          font-size: 18px;
+          margin-bottom: 30px; /* espaço abaixo */
+          margin-top: -20px; /* move um pouco pra cima */
+          overflow: hidden;
+          white-space: nowrap;
+          border-right: 2px solid #000;
+          width: 0;
+          animation: typing 2s steps(30, end) forwards;
+        }
+
+        .presentation-box p {
+          font-size: 8px; /* Textos explicativos */
+          margin-bottom: 8px;
+        }
+
+        .presentation-box button {
+          font-size: 12px; /* Botões */
+          padding: 10px 20px;
+          margin: 5px;
+          font-family: "Press Start 2P", sans-serif;
+        }
+      }
+
+      .presentation-box button {
+        font-family: "Press Start 2P", sans-serif;
+        padding: 10px 20px;
+        margin: 10px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="presentation" id="presentation">
+      <div class="presentation-box">
+        <h2>Bem-vindo!</h2>
+        <p>Use <strong>Espaço</strong> para pular</p>
+        <p>Use <strong>Enter</strong> para começar ou recomeçar</p>
+        <p>Vamos começar?</p>
+        <div class="buttons">
+          <button id="btnYes">Sim</button>
+          <button id="btnNo">Não</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="game" id="game">
+      <div class="dino" id="dino"></div>
+      <div class="cactus" id="cactus"></div>
+      <div class="game-over" id="gameOver">Game Over!</div>
+      <div class="start-text" id="startText">Pressione Enter para começar</div>
+      <div class="fun-message" id="funMessage">VAI DORMIR MANO</div>
+      <div class="score" id="score">Pontuação: 0</div>
+    </div>
+
+    <script>
+      const jumpSound = document.getElementById("jumpSound");
+      const gameOverSound = document.getElementById("gameOverSound");
+
+      const dino = document.getElementById("dino");
+      const cactus = document.getElementById("cactus");
+      const game = document.getElementById("game");
+      const gameOverText = document.getElementById("gameOver");
+      const startText = document.getElementById("startText");
+      const scoreDisplay = document.getElementById("score");
+      const funMessage = document.getElementById("funMessage");
+      const presentation = document.getElementById("presentation");
+      const btnYes = document.getElementById("btnYes");
+      const btnNo = document.getElementById("btnNo");
+
+      let cactusSpeed = 5;
+      let score = 0;
+      let isGameOver = false;
+      let gameStarted = false;
+      let messageShown = false;
+      let scoreInterval, collisionInterval, cactusInterval;
+
+      btnYes.addEventListener("click", () => {
+        presentation.style.display = "none";
+        game.style.display = "block";
+        startText.style.display = "block";
+      });
+
+      btnNo.addEventListener("click", () => {
+        presentation.innerHTML = "<h2>Adeus Abestado</h2>";
+      });
+
+      function startGame() {
+        cactusSpeed = 5;
+        gameStarted = true;
+        score = 0;
+        isGameOver = false;
+        messageShown = false;
+        startText.style.display = "none";
+        gameOverText.style.display = "none";
+        funMessage.style.display = "none";
+        cactus.style.left = "600px";
+
+        scoreInterval = setInterval(() => {
+          if (!isGameOver) {
+            score++;
+            scoreDisplay.textContent = "Pontuação: " + score;
+            if (score % 100 === 0) {
+              cactusSpeed += 2;
+            }
+            if (score >= 10000 && !messageShown) {
+              funMessage.style.display = "block";
+              messageShown = true;
+            }
+          }
+        }, 100);
+
+        cactusInterval = setInterval(() => {
+          let cactusLeft = parseInt(
+            window.getComputedStyle(cactus).getPropertyValue("left")
+          );
+          if (!isGameOver) {
+            cactus.style.left = cactusLeft - cactusSpeed + "px";
+          }
+          if (cactusLeft < -20) {
+            cactus.style.left = "600px";
+          }
+        }, 20);
+
+        collisionInterval = setInterval(() => {
+          const dinoRect = dino.getBoundingClientRect();
+          const cactusRect = cactus.getBoundingClientRect();
+          const dinoBottom = dinoRect.top + dinoRect.height;
+
+          const isColliding =
+            dinoRect.right > cactusRect.left &&
+            dinoRect.left < cactusRect.right &&
+            dinoBottom > cactusRect.top;
+
+          if (isColliding && !isGameOver) {
+            gameOver();
+          }
+        }, 10);
+      }
+
+      function gameOver() {
+        gameOverText.style.animation = "none";
+        void gameOverText.offsetWidth;
+        gameOverText.style.animation = "typing 1.5s steps(10, end) forwards";
+        gameOverText.style.display = "block";
+        isGameOver = true;
+        clearInterval(scoreInterval);
+        clearInterval(collisionInterval);
+        clearInterval(cactusInterval);
+        cactus.style.left = window
+          .getComputedStyle(cactus)
+          .getPropertyValue("left");
+        gameOverSound.currentTime = 0;
+        gameOverSound.play();
+      }
+
+      function jump() {
+        if (!dino.classList.contains("jump")) {
+          dino.classList.add("jump");
+          jumpSound.currentTime = 0;
+          jumpSound.play();
+          setTimeout(() => {
+            dino.classList.remove("jump");
+          }, 600);
+        }
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (event.code === "Enter") {
+          if (!gameStarted || isGameOver) {
+            startGame();
+          }
+        }
+
+        if (event.code === "Space" && gameStarted && !isGameOver) {
+          jump();
+        }
+      });
+    </script>
+  </body>
+</html>
